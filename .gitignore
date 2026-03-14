@@ -8,11 +8,6 @@ node_modules/
 # TypeScript cache
 *.tsbuildinfo
 
-# npm package lock
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
 # Config
 config.json
 
