@@ -102,19 +102,23 @@ async function main(): Promise<void> {
         await api.init(init);
         await api.downloadBudget(budget.syncId, { password: budget.password });
 
-        // Get transactions from the banks
-        for (const [companyIdStr, bankConfig] of Object.entries(configData.banks)) {
-            const companyId = companyIdStr as CompanyTypes;
-            const transactionsAccounts = await getTransactionsAccountsFromBank(companyId, bankConfig.credentials);
+        // Get transactions from the banks (run in parallel)
+        await Promise.all(
+            Object.entries(configData.banks).map(async ([companyIdStr, bankConfig]) => {
+                const companyId = companyIdStr as CompanyTypes;
+                const transactionsAccounts = await getTransactionsAccountsFromBank(companyId, bankConfig.credentials);
 
-            // Assign each scraped account to its target based on the config
-            const mappedAccounts = await mapAccountsToTargets(transactionsAccounts, bankConfig.targets);
+                // Assign each scraped account to its target based on the config
+                const mappedAccounts = await mapAccountsToTargets(transactionsAccounts, bankConfig.targets);
 
-            // Add transactions to Actual
-            for (const [actualAccountId, accounts] of Object.entries(mappedAccounts)) {
-                await addTransactionsToActual(actualAccountId, accounts);
-            }
-        }
+                // Add transactions to Actual
+                await Promise.all(
+                    Object.entries(mappedAccounts).map(([actualAccountId, accounts]) =>
+                        addTransactionsToActual(actualAccountId, accounts)
+                    )
+                );
+            })
+        );
 
         // Safely shut down Actual API
         console.log('Shutting down Actual API...');
