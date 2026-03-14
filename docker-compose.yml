@@ -1,0 +1,7 @@
+services:
+  bank-scraper:
+    build: .
+    volumes:
+      - ./config.json:/usr/src/app/config.json:ro
+      - ./data:/usr/src/app/data
+    restart: unless-stopped

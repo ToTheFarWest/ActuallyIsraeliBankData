@@ -1,0 +1,40 @@
+{
+  "actual": {
+    "init": {
+      "serverURL": "https://your-actual-server-url",
+      "password": "your-actual-password",
+      "verbose": false,
+      "dataDir": "./data"
+    },
+    "budget": {
+      "syncId": "your-budget-sync-id"
+    }
+  },
+  "banks": {
+    "leumi": {
+      "credentials": {
+        "username": "your-username",
+        "password": "your-password"
+      },
+      "targets": [
+        {
+          "actualAccountId": "your-actual-account-id",
+          "accounts": "all"
+        }
+      ]
+    },
+    "isracard": {
+      "credentials": {
+        "id": "your-id",
+        "card6Digits": "123456",
+        "password": "your-password"
+      },
+      "targets": [
+        {
+          "actualAccountId": "your-actual-account-id",
+          "accounts": ["3456"]
+        }
+      ]
+    }
+  }
+}
