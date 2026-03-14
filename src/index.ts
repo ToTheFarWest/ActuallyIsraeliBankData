@@ -19,6 +19,12 @@ async function getTransactionsAccountsFromBank(companyId: CompanyTypes, credenti
         showBrowser: false,
         verbose: true, // Set to true to include more debug info in the output
         defaultTimeout: 60000, // Set a custom timeout for navigation (default is 30000 ms)
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+        ],
+        navigationRetryCount: 3, // Number of times to retry navigation on failure
     };
 
     const scraper: Scraper<ScraperCredentials> = createScraper(options);
