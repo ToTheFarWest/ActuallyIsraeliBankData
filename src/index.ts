@@ -1,5 +1,6 @@
 import { CompanyTypes, createScraper, Scraper, ScraperCredentials, ScraperOptions, ScraperScrapingResult } from 'israeli-bank-scrapers';
-import { type AppConfig, AppConfigSchema } from './config.ts';
+import { type AppConfig, AppConfigSchema, type BankConfig } from './config.ts';
+import { type ActualTransaction, ActualTransactionSchema } from './types.ts';
 import { type TransactionsAccount } from 'israeli-bank-scrapers/lib/transactions.js';
 import api from '@actual-app/api'
 import * as fs from 'fs'
@@ -35,8 +36,8 @@ async function getTransactionsAccountsFromBank(companyId: CompanyTypes, credenti
     return scrapeResult.accounts;
 }
 
-async function mapAccountsToTargets(accounts: TransactionsAccount[], targets: AppConfig['bank']['targets']): Promise<{ [actualAccountId: string]: TransactionsAccount }> {
-    const mappedAccounts: { [actualAccountId: string]: TransactionsAccount } = {};
+async function mapAccountsToTargets(accounts: TransactionsAccount[], targets: BankConfig['targets']): Promise<{ [actualAccountId: string]: TransactionsAccount[] }> {
+    const mappedAccounts: { [actualAccountId: string]: TransactionsAccount[] } = {};
 
     for (const target of targets) {
         const matchingAccounts = target.accounts === "all"
@@ -45,6 +46,11 @@ async function mapAccountsToTargets(accounts: TransactionsAccount[], targets: Ap
                 const allowedSet = new Set(target.accounts);
                 return accounts.filter(acc => allowedSet.has(acc.accountNumber));
             })();
+        if (matchingAccounts.length === 0) {
+            console.warn(`No matching accounts found for target with actualAccountId ${target.actualAccountId}`);
+            continue;
+        }
+        mappedAccounts[target.actualAccountId] = matchingAccounts;
     }
 
     return mappedAccounts
@@ -52,10 +58,35 @@ async function mapAccountsToTargets(accounts: TransactionsAccount[], targets: Ap
 
 async function addTransactionsToActual(actualAccountId: string, accounts: TransactionsAccount[]): Promise<void> {
     accounts.forEach(account => {
-        console.log(`Adding transactions for account ${account.accountNumber} to Actual account ${actualAccountId}...`);    
+        console.log(`Adding transactions for account ${account.accountNumber} to Actual account ${actualAccountId}...`);
+
+        let transactions: ActualTransaction[] = [];
+
         for (const txn of account.txns) {
-            console.log("\t\t" + JSON.stringify(txn));
+            const actualTransaction: ActualTransaction = {
+                imported_id: txn.identifier?.toString(),
+                date: txn.date.split('T')[0], // Convert to YYYY-MM-DD format
+                amount: Math.round(txn.chargedAmount * 100), // Convert to Actual's "amount" format
+                payee_name: txn.description,
+                account: actualAccountId
+            };
+            ActualTransactionSchema.parse(actualTransaction);
+            transactions.push(actualTransaction);
+
+
+            console.log("\t\t" + JSON.stringify(actualTransaction));
         }
+
+        // Import transactions to Actual using the API
+        api.importTransactions(actualAccountId, transactions).then(() => {
+            console.log(`Successfully imported transactions for account ${account.accountNumber} to Actual account ${actualAccountId}`);
+        }).catch(err => {
+            if (err instanceof Error) {
+                console.error(`Failed to import transactions for account ${account.accountNumber} to Actual account ${actualAccountId}:`, err.message);
+            } else {
+                console.error(`Failed to import transactions for account ${account.accountNumber} to Actual account ${actualAccountId}:`, err);
+            }
+        });
     });
 }
 
@@ -67,18 +98,22 @@ async function main(): Promise<void> {
 
         // Initialize the Actual API with the provided configuration (if needed)
         console.log('Initializing Actual API with provided configuration...');
-        await api.init(configData.actual.init);
+        const { init, budget } = configData.actual;
+        await api.init(init);
+        await api.downloadBudget(budget.syncId, { password: budget.password });
 
-        // Get transactions from the bank
-        const bankConfig = configData.bank;
-        const transactionsAccounts = await getTransactionsAccountsFromBank(bankConfig.companyId, bankConfig.credentials);
+        // Get transactions from the banks
+        for (const [companyIdStr, bankConfig] of Object.entries(configData.banks)) {
+            const companyId = companyIdStr as CompanyTypes;
+            const transactionsAccounts = await getTransactionsAccountsFromBank(companyId, bankConfig.credentials);
 
-        // Assign each scraped account to its target based on the config
-        const mappedAccounts = await mapAccountsToTargets(transactionsAccounts, bankConfig.targets);
+            // Assign each scraped account to its target based on the config
+            const mappedAccounts = await mapAccountsToTargets(transactionsAccounts, bankConfig.targets);
 
-        // Add transactions to Actual
-        for (const [actualAccountId, account] of Object.entries(mappedAccounts)) {
-            await addTransactionsToActual(actualAccountId, [account]);
+            // Add transactions to Actual
+            for (const [actualAccountId, accounts] of Object.entries(mappedAccounts)) {
+                await addTransactionsToActual(actualAccountId, accounts);
+            }
         }
 
         // Safely shut down Actual API

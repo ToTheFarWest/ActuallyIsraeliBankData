@@ -15,3 +15,6 @@ pnpm-lock.yaml
 
 # Config
 config.json
+
+# Financial data
+./data/
