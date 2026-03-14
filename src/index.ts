@@ -1,3 +1,4 @@
+import './shim.ts';
 import { CompanyTypes, createScraper, Scraper, ScraperCredentials, ScraperOptions, ScraperScrapingResult } from 'israeli-bank-scrapers';
 import { type AppConfig, AppConfigSchema, type BankConfig } from './config.ts';
 import { type ActualTransaction, ActualTransactionSchema } from './types.ts';
@@ -15,7 +16,7 @@ async function getTransactionsAccountsFromBank(companyId: CompanyTypes, credenti
     const options: ScraperOptions = {
         companyId: companyId,
         startDate: oneMonthAgo,
-        showBrowser: true, // TODO: Set to false to run in headless mode
+        showBrowser: false,
         verbose: true, // Set to true to include more debug info in the output
         defaultTimeout: 60000, // Set a custom timeout for navigation (default is 30000 ms)
     };
@@ -72,9 +73,6 @@ async function addTransactionsToActual(actualAccountId: string, accounts: Transa
             };
             ActualTransactionSchema.parse(actualTransaction);
             transactions.push(actualTransaction);
-
-
-            console.log("\t\t" + JSON.stringify(actualTransaction));
         }
 
         // Import transactions to Actual using the API

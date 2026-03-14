@@ -8,15 +8,15 @@
   "main": "src/index.ts",
   "scripts": {
     "check": "tsc --noEmit",
-    "start": "ts-node src/index.ts"
+    "start": "tsx src/index.ts"
   },
   "dependencies": {
     "@actual-app/api": "^26.3.0",
-    "israeli-bank-scrapers": "^6.7.1"
+    "israeli-bank-scrapers": "^6.7.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "@types/node": "^25.5.0"
   }
 }
