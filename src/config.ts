@@ -1,30 +1,31 @@
 import { z } from 'zod';
 import { init } from '@actual-app/api';
-import { CompanyTypes } from 'israeli-bank-scrapers';
+import { CompanyTypes, type ScraperCredentials } from 'israeli-bank-scrapers';
 
 // 1. Extract the third-party type
 type ActualInitConfig = NonNullable<Parameters<typeof init>[0]>;
 
 // 2. Define the Runtime Schema
+const BankSchema = z.object({
+    credentials: z.custom<ScraperCredentials>(),
+    targets: z.array(
+        z.object({
+            actualAccountId: z.string(),
+            
+            // Accepts either "all" (a literal) OR an array of strings
+            accounts: z.union([
+                z.literal("all"),
+                z.array(z.string())
+            ]).default("all"),
+        })
+    )
+});
+
 export const AppConfigSchema = z.object({
-    bank: z.object({
-        companyId: z.nativeEnum(CompanyTypes),
-        credentials: z.object({
-            username: z.string(),
-            password: z.string(),
-        }),
-        targets: z.array(
-            z.object({
-                actualAccountId: z.string(),
-                
-                // Accepts either "all" (a literal) OR an array of strings
-                accounts: z.union([
-                    z.literal("all"),
-                    z.array(z.string())
-                ]).default("all"),
-            })
-        )
-    }),
+    banks: z.record(
+        z.nativeEnum(CompanyTypes),
+        BankSchema
+    ),
     actual: z.object({
         init: z.custom<ActualInitConfig>(),
         budget: z.object({
@@ -36,3 +37,6 @@ export const AppConfigSchema = z.object({
 
 // 3. Export the Type inferred from the Schema
 export type AppConfig = z.infer<typeof AppConfigSchema>;
+
+// 4. Export the Bank Config type
+export type BankConfig = z.infer<typeof BankSchema>;
