@@ -1,0 +1,22 @@
+{
+  "name": "actually-israeli-bank-data",
+  "version": "1.0.0",
+  "description": "A project to scrape and analyze Israeli bank data and upload to Actual",
+  "license": "ISC",
+  "author": "Yarden Akin",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "start": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "@actual-app/api": "^26.3.0",
+    "israeli-bank-scrapers": "^6.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
