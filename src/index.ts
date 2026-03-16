@@ -73,7 +73,7 @@ async function addTransactionsToActual(actualAccountId: string, accounts: Transa
             const actualTransaction: ActualTransaction = {
                 imported_id: txn.identifier?.toString(),
                 date: txn.date.split('T')[0], // Convert to YYYY-MM-DD format
-                amount: Math.round(txn.chargedAmount * 100), // Convert to Actual's "amount" format
+                amount: api.utils.amountToInteger(txn.chargedAmount),  // Convert to Actual's "amount" format
                 payee_name: txn.description,
                 account: actualAccountId
             };
