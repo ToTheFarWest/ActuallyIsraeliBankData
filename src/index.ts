@@ -32,11 +32,11 @@ async function getTransactionsAccountsFromBank(companyId: CompanyTypes, credenti
     const scrapeResult: ScraperScrapingResult = await scraper.scrape(credentials);
 
     if (!scrapeResult.success) {
-        throw new Error(`Scraping failed: ${scrapeResult.errorType} - ${scrapeResult.errorMessage}`);
+        throw new Error(`Scraping failed for bank ${companyId}: ${scrapeResult.errorType} - ${scrapeResult.errorMessage}`);
     }
 
     if (!scrapeResult.accounts || scrapeResult.accounts.length === 0) {
-        console.warn('Scraping succeeded but no accounts were found.');
+        console.warn(`Scraping succeeded for bank ${companyId} but no accounts were found.`);
         return [];
     }
 
